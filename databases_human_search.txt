@@ -1,0 +1,10 @@
+C:\Development\data\db\for_human_analysis\uniprot_cat.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_chimp.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_cow.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_crow.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_gorilla.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_human.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_human_shuffled.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_orangutan.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_stickleback.FASTA
+C:\Development\data\db\for_human_analysis\uniprot_tapeworm.FASTA
