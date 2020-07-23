@@ -109,7 +109,7 @@ for pepxml_file_name in file_names:
             novor_xcorr = -1
             fasta_xcorr = -1
             try:
-                if 'NOVOR_NOVOR' in e.search_result.search_hit[0].attrib['protein'] and \
+                if 'concatenated_peptides' in e.search_result.search_hit[0].attrib['protein'] and \
                         'DECOY_nv' not in e.search_result.search_hit[0].attrib['protein']:
                     novor_xcorr = float(e.search_result.search_hit[0].search_score[0].attrib['value'])
                     """if e.search_result.search_hit[0].attrib['peptide_prev_aa'] != "K" and \
@@ -119,7 +119,7 @@ for pepxml_file_name in file_names:
                         e.search_result.search_hit[0].attrib['peptide'][-1] != "R":
                         novor_xcorr = 0"""
                     for i in range(1, len(e.search_result.search_hit[0])):
-                        if 'NOVOR_NOVOR' not in e.search_result.search_hit[i].attrib['protein']:
+                        if 'concatenated_peptides' not in e.search_result.search_hit[i].attrib['protein']:
                             if 'DECOY' not in e.search_result.search_hit[i].attrib['protein']:
                                 fasta_xcorr = float(e.search_result.search_hit[i].search_score[0].attrib['value'])
                                 fasta_index = i
@@ -138,6 +138,9 @@ for pepxml_file_name in file_names:
                         rank_swap = '2' #If the denovo and fasta sequences are both ranked '1', need to force to '2'
                     e.search_result.search_hit[0].attrib['hit_rank'] = rank_swap
                     e.search_result.search_hit[fasta_index].attrib['hit_rank'] = "1"
+                    temp_hit = e.search_result.search_hit[0]
+                    e.search_result.search_hit[0] = e.search_result.search_hit[fasta_index]
+                    e.search_result.search_hit[fasta_index] = temp_hit
     print("Number of cases where NOVOR_NOVOR exceeded FASTA: " + str(delta_xcorr_count))
     print("Number of cases where the FASTA was close enough to be re-ranked: " + str(less_than_threshold_count))
     et = etree.ElementTree(root)

@@ -1,5 +1,3 @@
-__author__ = 'Tom Waschischeck'
-
 import os
 from pathlib import Path
 import subprocess
@@ -19,9 +17,7 @@ def minProb4FDR(root, FDR):
                 if error_data.attrib['charge'] == 'all':
                     previous_prob = 1
                     for data_point in error_data.getchildren():
-                        correct = int(data_point.attrib['num_corr'])
-                        incorrect = int(data_point.attrib['num_incorr'])
-                        current_FDR =  float(incorrect / float(correct+incorrect))
+                        current_FDR =  float(data_point.attrib['error'])
 
                         # If current FDR is now worse than wanted, the previous FDR was as close
                         # as we can get. -> return the previous probability
@@ -167,7 +163,7 @@ for database in db_names:
     exec(code)
     print("Done!\n")
     
-    re_ranked_pepXML = f"{Path(Path(pepXML).stem).stem}_unNovored.pep.xml"
+    re_ranked_pepXML = pepXML#f"{Path(Path(pepXML).stem).stem}_unNovored.pep.xml"
     
     # establishe FDR with PeptideProphet
     print("Running PeptideProphet ...")
