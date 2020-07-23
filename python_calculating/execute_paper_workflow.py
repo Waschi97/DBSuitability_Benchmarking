@@ -46,7 +46,7 @@ def onlyNovo(proteins):
             return False
     return True
 
-def calculateDBSuit(root, MinProb, consider_alternatives):
+def calculateDBSuit(root, MinProb):
     num_db = 0
     num_novo = 0
     for e in root.msms_run_summary.getchildren():
@@ -70,12 +70,11 @@ def calculateDBSuit(root, MinProb, consider_alternatives):
 
         possible_proteins = []
         # check alternative protein hits
-        if(consider_alternatives):
-            for p in top_hit.getchildren():
-                if 'alternative_protein' not in p.tag:
-                    continue
-                if 'DECOY_' not in p.attrib['protein']:
-                    possible_proteins.append(p.attrib['protein'])
+        for p in top_hit.getchildren():
+            if 'alternative_protein' not in p.tag:
+                continue
+            if 'DECOY_' not in p.attrib['protein']:
+                possible_proteins.append(p.attrib['protein'])
 
         if 'DECOY_' not in top_hit.attrib['protein']:
             possible_proteins.append(top_hit.attrib['protein'])
@@ -89,7 +88,7 @@ def calculateDBSuit(root, MinProb, consider_alternatives):
            continue
         num_db += 1
         
-    return num_db / float(num_novo + num_db)
+    return num_db, num_db / float(num_novo + num_db)
 
 # -----------------------------------------------------------------------------
 # input
@@ -128,7 +127,7 @@ with open(db_file_list, 'r') as DBs:
     db_names = [x.strip() for x in lines]
 
 output = open(out, 'w')
-output.write("mzML\tdatabase\tsuitability_no_alternative_proteins\tsuitability_with_alternative_proteins\n")
+output.write("mzML\tdatabase\tsuitability\t#db_hits\n")
 for database in db_names:
     print(f"Starting with {database}:")
     
@@ -163,7 +162,7 @@ for database in db_names:
     exec(code)
     print("Done!\n")
     
-    re_ranked_pepXML = pepXML#f"{Path(Path(pepXML).stem).stem}_unNovored.pep.xml"
+    re_ranked_pepXML = f"{Path(Path(pepXML).stem).stem}_unNovored.pep.xml"
     
     # establishe FDR with PeptideProphet
     print("Running PeptideProphet ...")
@@ -186,13 +185,12 @@ for database in db_names:
     # calculate db suitability
 
     print("Calculating database suitability ... ")
-    db_suit_no_alternatives = calculateDBSuit(root, MinProb, False)
-    db_suit_with_alternatives = calculateDBSuit(root, MinProb, True)
+    num_db, db_suit = calculateDBSuit(root, MinProb)
     print("Done!\n")
 
     # write output
 
-    output.write(f"{mzML}\t{database}\t{db_suit_no_alternatives}\t{db_suit_with_alternatives}\n")
+    output.write(f"{mzML}\t{database}\t{db_suit}\t{num_db}\n")
 
     # delete files to save storage
     if not keep_files:
