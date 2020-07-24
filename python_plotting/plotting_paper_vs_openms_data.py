@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 from pathlib import Path
 
+if os.path.sep == "\\":
+    WIN = True
+else:
+    WIN = False
+
 def readCSVdata(File):
     InFile = open(File, 'r')
     data_table = csv.reader(InFile, delimiter="\t")
@@ -16,7 +21,10 @@ def readCSVdata(File):
         if header:
             header = False
             continue
-        suit_map[Path(row[1]).stem] = (float(row[2]), int(row[3]))
+        if WIN:
+            suit_map[Path(row[1]).stem] = (float(row[2]), int(row[3]))
+        else:
+            suit_map[Path(row[1].replace("\\","/")).stem] = (float(row[2]), int(row[3]))
 
     InFile.close()
     
