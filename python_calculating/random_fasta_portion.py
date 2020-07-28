@@ -34,9 +34,9 @@ def get_random_data(FASTA, ratio):
     return extract_N_random_entries(lines, N, total)
 
 if __name__ == '__main__':
-    FASTA = sys.argv[0]
+    FASTA = sys.argv[1]
 
-    ratio = sys.argv[1]
+    ratio = sys.argv[2]
 
     data = get_random_data(FASTA, ratio)
 
