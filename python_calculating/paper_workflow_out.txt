@@ -1,5 +1,5 @@
 mzML	database	suitability	#db_hits
-C:\Development\TOPPAS_Outputs\TOPPAS_out\007-FileConverter-out\QEP2_2016_0512_RJ_13_human.mzML	C:\Development\data\db\for_human_analysis\uniprot_cat.FASTA	0.9106799846331156	23705
+C:\Development\TOPPAS_Outputs\TOPPAS_out\007-FileConverter-out\QEP2_2016_0512_RJ_13_human.mzML	C:\Development\data\db\for_human_analysis\uniprot_cat.FASTA	0.8890716251594281	26489
 C:\Development\TOPPAS_Outputs\TOPPAS_out\007-FileConverter-out\QEP2_2016_0512_RJ_13_human.mzML	C:\Development\data\db\for_human_analysis\uniprot_chimp.FASTA	0.9648063533507397	35474
 C:\Development\TOPPAS_Outputs\TOPPAS_out\007-FileConverter-out\QEP2_2016_0512_RJ_13_human.mzML	C:\Development\data\db\for_human_analysis\uniprot_cow.FASTA	0.885320177204994	26379
 C:\Development\TOPPAS_Outputs\TOPPAS_out\007-FileConverter-out\QEP2_2016_0512_RJ_13_human.mzML	C:\Development\data\db\for_human_analysis\uniprot_crow.FASTA	0.6362693788881209	12887
