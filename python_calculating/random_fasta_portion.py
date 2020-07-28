@@ -1,6 +1,7 @@
 import math
 from pathlib import Path
 import random
+import sys
 
 def number_of_fasta_entries_needed(lines, ratio):
     count = 0
@@ -33,9 +34,9 @@ def get_random_data(FASTA, ratio):
     return extract_N_random_entries(lines, N, total)
 
 if __name__ == '__main__':
-    FASTA1 = "C:\\Development\\TOPPAS_OutPuts\\TOPPAS_out\\011-IDFileConverter-out\\FU_2016_0606_RJ_28_pooled.fasta"
+    FASTA = sys.argv[0]
 
-    ratio = 0.5
+    ratio = sys.argv[1]
 
     data = get_random_data(FASTA, ratio)
 
