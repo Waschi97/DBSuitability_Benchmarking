@@ -30,17 +30,12 @@ crap_db = r"C:\Development\data\db\crap.FASTA"
 # output file
 out = "openMS_random_portion_out.txt"
 
-# wanted FDR
-FDR = 0.01
+# wanted FDR(s)
+FDRs = [0.01, 0.02]
 
 # set the number of samples you wish to be done
-# percentages are calculated as equidistant
+# percentages are calculated to be equidistant
 num_test = 2
-
-# number of iteration that will be done
-# sampling is done random therefore this should be
-# relativly high to get reasonable results
-num_iterations = 2
 
 # Set to 'True' if you want to keep the temporary files produced by this script
 keep_files = False
@@ -54,14 +49,14 @@ ratios = ratios[::-1] # reverse the list
 
 start = time.perf_counter()
 ratio_to_suit = {}
-i = 0
-while i < num_iterations:
-    i += 1
-    print("-----------------------------------------------------------------")
-    print(f"Iteration number {i} beginning ...")
-    for ratio in ratios:
-        print(f"Starting with ratio: {ratio}\n")
-        
+for ratio in ratios:
+    num_iterations = round(1/ratio)
+    print(f"Starting with ratio: {ratio}\n")
+    i = 0
+    while i < num_iterations:
+        i += 1
+        print("-----------------------------------------------------------------")
+        print(f"Iteration number {i} of {num_iterations} beginning ...")    
         # calculate portioned fasta file
         print("Calculating portioned database ...")
         data = random_fasta_portion.get_random_data(db, ratio)
@@ -69,7 +64,7 @@ while i < num_iterations:
         with open(database, 'w') as File:
             File.write(data)
         print("Done!\n")
-            
+          
         # combine db with novo protein and build decoy database
     
         decoy_db = f"{Path.cwd()}{os.path.sep}{Path(database).stem}_novo_decoy.FASTA"
@@ -99,41 +94,50 @@ while i < num_iterations:
         print("Done!\n")
 
         # run DatabaseSuitability
-    
-        DBSuit_out = "db_suit_out.tsv"
-        print("Running DatabaseSuitability ...")
-        os.system(f"DatabaseSuitability -in_id {fdr_idXML} -in_novo {novo_seqs} -in_spec {mzML} -out {DBSuit_out} -novor_fract 0.99 -FDR 0.01")
-        print("Done!\n")
 
-        # extract wanted data from output
+        for FDR in FDRs:
+            DBSuit_out = f"db_suit_out_{FDR}.tsv"
+            print(f"Running DatabaseSuitability with FDR {FDR}...")
+            os.system(f"DatabaseSuitability -in_id {fdr_idXML} -in_novo {novo_seqs} -in_spec {mzML} -out {DBSuit_out} -novor_fract 0.99 -FDR {FDR}")
+            print("Done!\n")
 
-        # if DatabaseSuitability throws any error, we don't want to lose all the other data
-        try:
-            data_file = open(DBSuit_out, 'r')
-        except FileNotFoundError:
-            print(f"Suitability couldn't be calculated for {ratio}.")
-            continue
-        
-        data_table = csv.reader(data_file, delimiter="\t")
+            # extract wanted data from output
 
-        db_hits = -1
-        suitability = -1
-        for row in data_table:
-            if row[0] == "#top_db_hits":
-                db_hits = int(row[1])
-            if row[0] == "db_suitability":
-                suitability = float(row[1])
+            # if DatabaseSuitability throws any error, we don't want to lose all the other data
+            try:
+                data_file = open(DBSuit_out, 'r')
+            except FileNotFoundError:
+                print(f"Suitability couldn't be calculated for ratio {ratio} with FDR {FDR}.")
+                continue
+            
+            data_table = csv.reader(data_file, delimiter="\t")
 
-        if db_hits < 0 or suitability < 0:
-            print("Couldn't find data in DatabaseSuitability output .. Aborting!")
-            exit()
+            db_hits = -1
+            novo_hits = -1
+            suitability = -1
+            for row in data_table:
+                if row[0] == "#top_db_hits":
+                    db_hits = int(row[1])
+                if row[0] == "#top_novo_hits":
+                    novo_hits = int(row[1])
+                if row[0] == "db_suitability":
+                    suitability = float(row[1])
 
-        data_file.close()
+            if db_hits < 0 or suitability < 0:
+                print("Couldn't find data in DatabaseSuitability output .. Aborting!")
+                exit()
 
-        if ratio in ratio_to_suit:
-            ratio_to_suit[ratio].append((suitability, db_hits))
-        else:
-            ratio_to_suit[ratio] = [(suitability, db_hits)]
+            data_file.close()
+
+            key = (ratio, FDR)
+            
+            if key in ratio_to_suit:
+                ratio_to_suit[key].append((suitability, db_hits, novo_hits))
+            else:
+                ratio_to_suit[key] = [(suitability, db_hits, novo_hits)]
+
+            if not keep_files:
+                os.remove(DBSuit_out)
 
         # delete files to save storage
         if not keep_files:
@@ -143,17 +147,28 @@ while i < num_iterations:
             os.remove(idXML)
             os.remove(indexed_idXML)
             os.remove(fdr_idXML)
-            os.remove(DBSuit_out)
             print("Done!\n")
 
 output = open(out, 'w')
-output.write("ratio\t[suitability, #db_hits]\n")
-for ratio in ratio_to_suit:
-    line = str(ratio)
-    for elem in ratio_to_suit[ratio]:
+output.write("ratio\taverage_suitability\taverage_db_hits\taverage_novo_hits\t[suitability, #db_hits, #novo_hits]*N\n")
+for key in ratio_to_suit:
+    result_list = ratio_to_suit[key]
+    line = ""
+    avg_suit = 0
+    avg_db_hits = 0
+    avg_novo_hits = 0
+    for elem in result_list:
         suitability = elem[0]
         db_hits = elem[1]
-        line += f"\t[{suitability}, {db_hits}]\t"
+        novo_hits = elem[2]
+        avg_suit += suitability
+        avg_db_hits += db_hits
+        avg_novo_hits += novo_hits
+        line += f"\t[{suitability}, {db_hits}, {novo_hits}]"
+    avg_suit = avg_suit/len(result_list)
+    avg_db_hits = avg_db_hits/len(result_list)
+    avg_novo_hits = avg_novo_hits/len(result_list)
+    line = f"{key}\t{avg_suit}\t{avg_db_hits}\t{avg_novo_hits}" + line
     output.write(f"{line}\n")
 output.close()
 print(f"Output written to {os.path.abspath(out)}.")
