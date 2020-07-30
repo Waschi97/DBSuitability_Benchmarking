@@ -55,38 +55,55 @@ for key in paper_map:
         print(f"Skipped {key} from paper output because it wasn't found in the OpenMS output.")
 
 
-suit_paper, suit_openMS, hits_paper, hits_openMS, names = (list(t) for t in zip(*sorted(zip(suit_paper, suit_openMS, hits_paper, hits_openMS, names), reverse=True)))
+suit_paper, suit_openMS, hits_paper, hits_openMS, names = (list(t) for t in zip(*sorted(zip(suit_paper, suit_openMS, hits_paper, hits_openMS, names))))
 
 pos = list(range(len(suit_paper)))
 width = 0.25
 
 params = {'legend.fontsize': 'medium',
-          'figure.figsize': (10, 6),
+          'figure.figsize': (10, 10),
          'axes.labelsize': 'medium',
          'axes.titlesize':'large',
          'xtick.labelsize':'small',
          'ytick.labelsize':'medium'}
 pylab.rcParams.update(params)
 
-fig, ax = plt.subplots()
+fig, (ax1, ax2) = plt.subplots(2)
 
-plt.bar(pos, suit_paper, width, alpha=0.5, color='b')
-plt.bar([p + width for p in pos] , suit_openMS, width, alpha=0.5, color='r')
+ax1.bar(pos, suit_paper, width, alpha=0.5, color='b')
+ax1.bar([p + width for p in pos] , suit_openMS, width, alpha=0.5, color='r')
 
-ax.set_yticks(list(np.arange(0,1.05,0.05)))
-ax.set_ylabel('Suitability')
-ax.yaxis.grid(linestyle='dotted')
+ax1.set_yticks(list(np.arange(0,1.05,0.05)))
+ax1.set_ylabel('Suitability')
+ax1.yaxis.grid(linestyle='dotted')
 
-ax.set_xticks([p + 0.5 * width for p in pos])
-ax.set_xticklabels([name for name in names], rotation=35)
+ax1.set_xticks([p + 0.5 * width for p in pos])
+ax1.set_xticklabels([name for name in names], rotation=35)
 
-plt.ylim([0, 1])
+ax1.set_ylim([0, 1])
 
-plt.legend(['Paper', 'OpenMS'], loc='upper right')
+ax1.legend(['Paper', 'OpenMS'], loc='upper left')
 
-plt.title("Suitability of Various FASTA Files for Analysis\nof LC-MS/MS Data from Human Tryptic Peptides")
+ax1.set_title("Suitability of Various FASTA Files for Analysis\nof LC-MS/MS Data from Human Tryptic Peptides")
 
-plt.tight_layout()
+ax2.scatter(hits_paper, suit_paper, color='b')
+ax2.scatter(hits_openMS, suit_openMS, color='r')
 
-plt.savefig("paper_vs_openms.png")
+ax2.set_xlabel('number of\ndatabase hits')
+ax2.set_xticks(list(range(0,max(hits_paper),1000)))
+ax2.set_xticklabels(list(range(0,max(hits_paper),1000)), rotation=35)
+ax2.xaxis.grid(linestyle='dotted')
+
+ax2.set_ylabel('Suitability')
+ax2.set_yticks(list(np.arange(0,1.05,0.05)))
+ax2.yaxis.grid(linestyle='dotted')
+ax2.set_ylim([0, 1])
+
+ax2.legend(['Paper', 'OpenMS'], loc='upper left')
+
+ax2.set_title("Number of Database Hits against\n Database Suitability")
+
+fig.tight_layout()
+
+fig.savefig("paper_vs_openms.png")
 
