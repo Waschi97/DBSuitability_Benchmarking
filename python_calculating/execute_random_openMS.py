@@ -150,7 +150,7 @@ for ratio in ratios:
             print("Done!\n")
 
 output = open(out, 'w')
-output.write("ratio\taverage_suitability\taverage_db_hits\taverage_novo_hits\t[suitability, #db_hits, #novo_hits]*N\n")
+output.write("ratio,FDR\taverage_suitability\taverage_db_hits\taverage_novo_hits\t[suitability, #db_hits, #novo_hits]*N\n")
 for key in ratio_to_suit:
     result_list = ratio_to_suit[key]
     line = ""
@@ -164,7 +164,7 @@ for key in ratio_to_suit:
         avg_suit += suitability
         avg_db_hits += db_hits
         avg_novo_hits += novo_hits
-        line += f"\t[{suitability}, {db_hits}, {novo_hits}]"
+        line += f"\t[{suitability},{db_hits},{novo_hits}]"
     avg_suit = avg_suit/len(result_list)
     avg_db_hits = avg_db_hits/len(result_list)
     avg_novo_hits = avg_novo_hits/len(result_list)
