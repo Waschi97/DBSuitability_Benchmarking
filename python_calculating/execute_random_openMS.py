@@ -8,7 +8,7 @@ import time
 # -----------------------------------------------------------------------------
 # input
 
-comet_exe = r"C:\Development\analysis_executables\comet\comet.2019015.win64.exe"
+comet_exe = r"comet.exe"
 
 comet_threads = 5
 
@@ -31,11 +31,11 @@ crap_db = r"C:\Development\data\db\crap.FASTA"
 out = "openMS_random_portion_out.txt"
 
 # wanted FDR(s)
-FDRs = [0.01, 0.02]
+FDRs = [0.01]
 
 # set the number of samples you wish to be done
 # percentages are calculated to be equidistant
-num_test = 2
+num_test = 1
 
 # Set to 'True' if you want to keep the temporary files produced by this script
 keep_files = False
@@ -67,16 +67,18 @@ for ratio in ratios:
           
         # combine db with novo protein and build decoy database
     
-        decoy_db = f"{Path.cwd()}{os.path.sep}{Path(database).stem}_novo_decoy.FASTA"
-        print("Calculating decoy database ...")
-        os.system(f"DecoyDatabase -in {database} {novo_fasta} {crap_db} -out {decoy_db}")
+        decoy_db = f"{Path.cwd()}{os.path.sep}{Path(database).stem}_decoy.FASTA"
+        novo_db = f"{Path.cwd()}{os.path.sep}novo_decoy.FASTA"
+        print("Calculating decoy database(s) ...")
+        os.system(f"DecoyDatabase -in {database} {crap_db} -out {decoy_db}")
+        os.system(f"DecoyDatabase -in {novo_fasta} -out {novo_db}")
         print("Done!\n")
   
         # run CometAdapter
 
         idXML = f"{Path.cwd()}{os.path.sep}{Path(mzML).stem}.idXML"
         print("Running CometAdapter ...")
-        os.system(f"CometAdapter -in {mzML} -out {idXML} -database {decoy_db} -comet_executable {comet_exe} -precursor_mass_tolerance 20.0 -isotope_error 0/1/2/3 -allowed_missed_cleavages 2 -num_hits 10 -max_precursor_charge 6 -spectrum_batch_size 15000 -threads {comet_threads}")
+        os.system(f"CometAdapter -in {mzML} -out {idXML} -database {decoy_db} -comet_executable {comet_exe} -precursor_mass_tolerance 20.0 -isotope_error 0/1/2/3 -missed_cleavages 2 -num_hits 10 -max_precursor_charge 6 -spectrum_batch_size 15000 -threads {comet_threads}")
         print("Done!\n")
 
         # run PeptideIndexer
@@ -86,19 +88,12 @@ for ratio in ratios:
         os.system(f"PeptideIndexer -in {idXML} -out {indexed_idXML} -fasta {decoy_db}")
         print("Done!\n")
 
-        # run FDR
-
-        fdr_idXML = f"{Path(idXML).stem}_fdr.idXML"
-        print("Running FalseDiscoveryRate ...")
-        os.system(f"FalseDiscoveryRate -in {indexed_idXML} -out {fdr_idXML} -protein false -algorithm:use_all_hits -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins")
-        print("Done!\n")
-
         # run DatabaseSuitability
 
         for FDR in FDRs:
             DBSuit_out = f"db_suit_out_{FDR}.tsv"
             print(f"Running DatabaseSuitability with FDR {FDR}...")
-            os.system(f"DatabaseSuitability -in_id {fdr_idXML} -in_novo {novo_seqs} -in_spec {mzML} -out {DBSuit_out} -novor_fract 0.99 -FDR {FDR}")
+            os.system(f"DatabaseSuitability -in_id {indexed_idXML} -in_novo {novo_seqs} -in_spec {mzML} -database {decoy_db} -novo_database {novo_db} -out {DBSuit_out} -cut_off_fract 0.99 -FDR {FDR} -debug 1")
             print("Done!\n")
 
             # extract wanted data from output
@@ -114,16 +109,22 @@ for ratio in ratios:
 
             db_hits = -1
             novo_hits = -1
+            corr_novo_hits = -1
             suitability = -1
+            corr_suitability = -1
             for row in data_table:
                 if row[0] == "#top_db_hits":
                     db_hits = int(row[1])
                 if row[0] == "#top_novo_hits":
                     novo_hits = int(row[1])
+                if row[0] == "#corrected_novo_hits":
+                    corr_novo_hits = float(row[1])
                 if row[0] == "db_suitability":
                     suitability = float(row[1])
+                if row[0] == "corrected_suitability":
+                    corr_suitability = float(row[1])
 
-            if db_hits < 0 or suitability < 0:
+            if db_hits < 0 or novo_hits < 0 or corr_novo_hits < 0 or suitability < 0 or corr_suitability < 0:
                 print("Couldn't find data in DatabaseSuitability output .. Aborting!")
                 exit()
 
@@ -132,9 +133,9 @@ for ratio in ratios:
             key = (ratio, FDR)
             
             if key in ratio_to_suit:
-                ratio_to_suit[key].append((suitability, db_hits, novo_hits))
+                ratio_to_suit[key].append((suitability, corr_suitability, db_hits, novo_hits, corr_novo_hits))
             else:
-                ratio_to_suit[key] = [(suitability, db_hits, novo_hits)]
+                ratio_to_suit[key] = [(suitability, corr_suitability, db_hits, novo_hits, corr_novo_hits)]
 
             if not keep_files:
                 os.remove(DBSuit_out)
@@ -144,31 +145,26 @@ for ratio in ratios:
             print("Removing files ...")
             os.remove(database)
             os.remove(decoy_db)
+            os.remove(novo_db)
             os.remove(idXML)
             os.remove(indexed_idXML)
-            os.remove(fdr_idXML)
             print("Done!\n")
 
 output = open(out, 'w')
-output.write("ratio,FDR\taverage_suitability\taverage_db_hits\taverage_novo_hits\t[suitability, #db_hits, #novo_hits]*N\n")
+output.write("ratio,FDR\t[suitability, corrected_suitability, #db_hits, #novo_hits, #corrected_novo_hits]*N\n")
 for key in ratio_to_suit:
     result_list = ratio_to_suit[key]
-    line = ""
+    line = f"{key}\t"
     avg_suit = 0
     avg_db_hits = 0
     avg_novo_hits = 0
     for elem in result_list:
         suitability = elem[0]
-        db_hits = elem[1]
-        novo_hits = elem[2]
-        avg_suit += suitability
-        avg_db_hits += db_hits
-        avg_novo_hits += novo_hits
-        line += f"\t[{suitability},{db_hits},{novo_hits}]"
-    avg_suit = avg_suit/len(result_list)
-    avg_db_hits = avg_db_hits/len(result_list)
-    avg_novo_hits = avg_novo_hits/len(result_list)
-    line = f"{key}\t{avg_suit}\t{avg_db_hits}\t{avg_novo_hits}" + line
+        corr_suitability = elem[1]
+        db_hits = elem[2]
+        novo_hits = elem[3]
+        corr_novo_hits = elem[4]
+        line += f"\t[{suitability},{corr_suitability},{db_hits},{novo_hits},{corr_novo_hits}]"
     output.write(f"{line}\n")
 output.close()
 print(f"Output written to {os.path.abspath(out)}.")
