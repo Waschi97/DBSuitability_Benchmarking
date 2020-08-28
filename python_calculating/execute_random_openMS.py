@@ -154,7 +154,7 @@ output = open(out, 'w')
 output.write("ratio,FDR\t[suitability, corrected_suitability, #db_hits, #novo_hits, #corrected_novo_hits]*N\n")
 for key in ratio_to_suit:
     result_list = ratio_to_suit[key]
-    line = f"{key}\t"
+    line = f"{key}"
     avg_suit = 0
     avg_db_hits = 0
     avg_novo_hits = 0

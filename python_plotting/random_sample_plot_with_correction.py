@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 
-InFile = open(f"..{os.path.sep}python_calculating{os.path.sep}openMS_random_with_correction_out.txt", 'r')
+InFile = open(f"..{os.path.sep}python_calculating{os.path.sep}openMS_random_with_correction_extrapolation.txt", 'r')
  
 data_table = csv.reader(InFile, delimiter="\t")
 FDR_to_data = {}
@@ -31,6 +31,8 @@ for row in data_table:
     for data_point in data:
         data_point = data_point[1:-1]
         suit, corr_suit, db_hit, novo_hit, corr_novo_hit = data_point.split(',')
+        if float(corr_novo_hit) < 0:
+            continue
         suits.append(float(suit))
         corr_suits.append(float(corr_suit))
         db_hits.append(int(db_hit))
@@ -61,6 +63,7 @@ for d in data:
 
 axs[0].plot(X,Y, ':r')
 axs[0].plot(X,Y_corr, ':b')
+axs[0].plot(X,X, '-', color = '0.5', alpha = 0.5)
 axs[0].set_ylabel("Suitability")
 axs[0].yaxis.grid(linestyle='dotted')
 axs[0].yaxis.set_major_locator(plt.MultipleLocator(0.05))
@@ -92,7 +95,7 @@ line, = axs[1].plot(X,function(X), ':r')
 #line.set_label(f"slope:\n{round(coef[0]*0.1,1)} hits per 10 % increase")
 axs[1].plot(X_corr,Y_corr, ':b')
 axs[1].set_ylabel("number of\ndeNovo hits")
-axs[1].yaxis.set_major_locator(plt.MultipleLocator(2000))
+axs[1].yaxis.set_major_locator(plt.MultipleLocator(4000))
 axs[1].yaxis.grid(linestyle='dotted')
 axs[1].set_xlabel("ratio")
 axs[1].set_xticks(tick_labels)
@@ -101,4 +104,4 @@ axs[1].legend(["deNovo hits before correction", "deNovo hits after correction"])
 
 fig.set_size_inches(10,8)
 fig.tight_layout()
-fig.savefig("ratio_sampling_with_correction.png")
+fig.savefig("ratio_sampling_with_correction_extrapolation.png")
